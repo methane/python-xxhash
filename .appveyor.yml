@@ -45,7 +45,8 @@ install:
     - git --version
     - '%PYTHON%\python.exe --version'
     - git submodule update --init --recursive
-    - '%PYTHON%\scripts\pip.exe install cffi wheel'
+    - '%PYTHON%\scripts\pip.exe install wheel'
+    - if %XXHASH_FORCE_CFFI%=1 '%PYTHON%\scripts\pip.exe install cffi'
     - '%PYTHON%\scripts\pip.exe --version'
 
 test_script:
