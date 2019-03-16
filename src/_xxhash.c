@@ -30,6 +30,7 @@
 
 #include <Python.h>
 
+#include "xxh3.h"
 #include "xxhash.h"
 
 #define TOSTRING(x) #x
@@ -40,6 +41,8 @@
 #define XXH32_BLOCKSIZE 16
 #define XXH64_DIGESTSIZE 8
 #define XXH64_BLOCKSIZE 32
+#define XXH128_DIGESTSIZE 16
+#define XXH128_BLOCKSIZE 64
 
 /* Release the GIL if taking more than ~10 µs */
 #define GIL_MINSIZE 100 * 1000
@@ -261,6 +264,245 @@ static PyObject *xxh64_hexdigest(PyObject *self, PyObject *args, PyObject *kwarg
     XXH64_canonicalFromHash((XXH64_canonical_t *)digest, intdigest);
 
     for (i = j = 0; i < XXH64_DIGESTSIZE; i++) {
+        unsigned char c;
+        c = (digest[i] >> 4) & 0xf;
+        c = (c > 9) ? c + 'a' - 10 : c + '0';
+        retbuf[j++] = c;
+        c = (digest[i] & 0xf);
+        c = (c > 9) ? c + 'a' - 10 : c + '0';
+        retbuf[j++] = c;
+    }
+
+    return retval;
+}
+
+/* XXH3_64 */
+
+static PyObject *xxh3_64_digest(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+    unsigned long long seed = 0, intdigest = 0;
+    char *keywords[] = {"input", "seed", NULL};
+    Py_buffer buf;
+    PyObject *retval;
+    char *retbuf;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_64_digest", keywords, &buf, &seed)) {
+        return NULL;
+    }
+
+    intdigest = XXH3_64bits_withSeed(buf.buf, buf.len, seed);
+    PyBuffer_Release(&buf);
+
+
+#if PY_MAJOR_VERSION >= 3
+    retval = PyBytes_FromStringAndSize(NULL, XXH64_DIGESTSIZE);
+#else
+    retval = PyString_FromStringAndSize(NULL, XXH64_DIGESTSIZE);
+#endif
+
+    if (!retval) {
+        return NULL;
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    retbuf = PyBytes_AS_STRING(retval);
+#else
+    retbuf = PyString_AS_STRING(retval);
+#endif
+
+    ull2bytes(intdigest, retbuf);
+
+    return retval;
+}
+
+static PyObject *xxh3_64_intdigest(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+    unsigned long long seed = 0, intdigest = 0;
+    char *keywords[] = {"input", "seed", NULL};
+    Py_buffer buf;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_64_intdigest", keywords, &buf, &seed)) {
+        return NULL;
+    }
+
+    intdigest = XXH3_64bits_withSeed(buf.buf, buf.len, seed);
+    PyBuffer_Release(&buf);
+
+    return Py_BuildValue("K", intdigest);
+}
+
+static PyObject *xxh3_64_hexdigest(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+    unsigned long long seed = 0, intdigest = 0;
+    char digest[XXH64_DIGESTSIZE + 1];
+    char *keywords[] = {"input", "seed", NULL};
+    Py_buffer buf;
+#if PY_MAJOR_VERSION >= 3
+    Py_UNICODE *retbuf;
+#else
+    char *retbuf;
+#endif
+    PyObject *retval;
+    int i, j;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_64_hexdigest", keywords, &buf, &seed)) {
+        return NULL;
+    }
+
+    intdigest = XXH3_64bits_withSeed(buf.buf, buf.len, seed);
+    PyBuffer_Release(&buf);
+
+#if PY_MAJOR_VERSION >= 3
+    retval = PyUnicode_FromStringAndSize(NULL, XXH64_DIGESTSIZE * 2);
+#else
+    retval = PyString_FromStringAndSize(NULL, XXH64_DIGESTSIZE * 2);
+#endif
+
+    if (!retval) {
+        return NULL;
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    retbuf = PyUnicode_AS_UNICODE(retval);
+#else
+    retbuf = PyString_AS_STRING(retval);
+#endif
+
+    if (!retbuf) {
+        Py_DECREF(retval);
+        return NULL;
+    }
+
+    ull2bytes(intdigest, digest);
+
+    for (i = j = 0; i < XXH64_DIGESTSIZE; i++) {
+        unsigned char c;
+        c = (digest[i] >> 4) & 0xf;
+        c = (c > 9) ? c + 'a' - 10 : c + '0';
+        retbuf[j++] = c;
+        c = (digest[i] & 0xf);
+        c = (c > 9) ? c + 'a' - 10 : c + '0';
+        retbuf[j++] = c;
+    }
+
+    return retval;
+}
+
+/* XXH3_128 */
+
+static PyObject *xxh3_128_digest(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+    unsigned long long seed = 0;
+    char *keywords[] = {"input", "seed", NULL};
+    Py_buffer buf;
+    PyObject *retval;
+    char *retbuf;
+    XXH128_hash_t intdigest;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_128_digest", keywords, &buf, &seed)) {
+        return NULL;
+    }
+
+    intdigest = XXH3_128bits_withSeed(buf.buf, buf.len, seed);
+    PyBuffer_Release(&buf);
+
+
+#if PY_MAJOR_VERSION >= 3
+    retval = PyBytes_FromStringAndSize(NULL, XXH128_DIGESTSIZE);
+#else
+    retval = PyString_FromStringAndSize(NULL, XXH128_DIGESTSIZE);
+#endif
+
+    if (!retval) {
+        return NULL;
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    retbuf = PyBytes_AS_STRING(retval);
+#else
+    retbuf = PyString_AS_STRING(retval);
+#endif
+
+    ull2bytes(intdigest.high64, retbuf);
+    ull2bytes(intdigest.low64, retbuf + XXH64_DIGESTSIZE);
+
+    return retval;
+}
+
+static PyObject *xxh3_128_intdigest(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+    unsigned long long seed = 0;
+    char *keywords[] = {"input", "seed", NULL};
+    Py_buffer buf;
+    XXH128_hash_t intdigest;
+    PyObject *low, *high, *sixtyfour;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_128_intdigest", keywords, &buf, &seed)) {
+        return NULL;
+    }
+
+    intdigest = XXH3_128bits_withSeed(buf.buf, buf.len, seed);
+    PyBuffer_Release(&buf);
+
+    sixtyfour = PyLong_FromLong(64);
+    low = PyLong_FromUnsignedLongLong(intdigest.low64);
+    high = PyLong_FromUnsignedLongLong(intdigest.high64);
+    PyNumber_InPlaceLshift(high, sixtyfour);
+    PyNumber_InPlaceAdd(high, low);
+    Py_DECREF(low);
+    Py_DECREF(sixtyfour);
+    return high;
+}
+
+static PyObject *xxh3_128_hexdigest(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+    unsigned long long seed = 0;
+    char digest[XXH128_DIGESTSIZE + 1];
+    char *keywords[] = {"input", "seed", NULL};
+    Py_buffer buf;
+#if PY_MAJOR_VERSION >= 3
+    Py_UNICODE *retbuf;
+#else
+    char *retbuf;
+#endif
+    PyObject *retval;
+    int i, j;
+    XXH128_hash_t intdigest;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_128_hexdigest", keywords, &buf, &seed)) {
+        return NULL;
+    }
+
+    intdigest = XXH3_128bits_withSeed(buf.buf, buf.len, seed);
+    PyBuffer_Release(&buf);
+
+#if PY_MAJOR_VERSION >= 3
+    retval = PyUnicode_FromStringAndSize(NULL, XXH128_DIGESTSIZE * 2);
+#else
+    retval = PyString_FromStringAndSize(NULL, XXH128_DIGESTSIZE * 2);
+#endif
+
+    if (!retval) {
+        puts("!retval");
+        return NULL;
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    retbuf = PyUnicode_AS_UNICODE(retval);
+#else
+    retbuf = PyString_AS_STRING(retval);
+#endif
+
+    if (!retbuf) {
+        puts("!retbuf");
+        Py_DECREF(retval);
+        return NULL;
+    }
+
+    ull2bytes(intdigest.high64, digest);
+    ull2bytes(intdigest.low64, digest + (XXH128_DIGESTSIZE/2));
+
+    for (i = j = 0; i < XXH128_DIGESTSIZE; i++) {
         unsigned char c;
         c = (digest[i] >> 4) & 0xf;
         c = (c > 9) ? c + 'a' - 10 : c + '0';
@@ -998,12 +1240,18 @@ static PyTypeObject PYXXH64Type = {
 /* ref: https://docs.python.org/2/howto/cporting.html */
 
 static PyMethodDef methods[] = {
-    {"xxh32_digest",    (PyCFunction)xxh32_digest,    METH_VARARGS | METH_KEYWORDS, "xxh32_digest"},
-    {"xxh32_intdigest", (PyCFunction)xxh32_intdigest, METH_VARARGS | METH_KEYWORDS, "xxh32_intdigest"},
-    {"xxh32_hexdigest", (PyCFunction)xxh32_hexdigest, METH_VARARGS | METH_KEYWORDS, "xxh32_hexdigest"},
-    {"xxh64_digest",    (PyCFunction)xxh64_digest,    METH_VARARGS | METH_KEYWORDS, "xxh64_digest"},
-    {"xxh64_intdigest", (PyCFunction)xxh64_intdigest, METH_VARARGS | METH_KEYWORDS, "xxh64_intdigest"},
-    {"xxh64_hexdigest", (PyCFunction)xxh64_hexdigest, METH_VARARGS | METH_KEYWORDS, "xxh64_hexdigest"},
+    {"xxh32_digest",       (PyCFunction)xxh32_digest,       METH_VARARGS | METH_KEYWORDS, "xxh32_digest"},
+    {"xxh32_intdigest",    (PyCFunction)xxh32_intdigest,    METH_VARARGS | METH_KEYWORDS, "xxh32_intdigest"},
+    {"xxh32_hexdigest",    (PyCFunction)xxh32_hexdigest,    METH_VARARGS | METH_KEYWORDS, "xxh32_hexdigest"},
+    {"xxh64_digest",       (PyCFunction)xxh64_digest,       METH_VARARGS | METH_KEYWORDS, "xxh64_digest"},
+    {"xxh64_intdigest",    (PyCFunction)xxh64_intdigest,    METH_VARARGS | METH_KEYWORDS, "xxh64_intdigest"},
+    {"xxh64_hexdigest",    (PyCFunction)xxh64_hexdigest,    METH_VARARGS | METH_KEYWORDS, "xxh64_hexdigest"},
+    {"xxh3_64_digest",     (PyCFunction)xxh3_64_digest,     METH_VARARGS | METH_KEYWORDS, "xxh3_64_digest"},
+    {"xxh3_64_intdigest",  (PyCFunction)xxh3_64_intdigest,  METH_VARARGS | METH_KEYWORDS, "xxh3_64_intdigest"},
+    {"xxh3_64_hexdigest",  (PyCFunction)xxh3_64_hexdigest,  METH_VARARGS | METH_KEYWORDS, "xxh3_64_hexdigest"},
+    {"xxh3_128_digest",    (PyCFunction)xxh3_128_digest,    METH_VARARGS | METH_KEYWORDS, "xxh3_64_digest"},
+    {"xxh3_128_intdigest", (PyCFunction)xxh3_128_intdigest, METH_VARARGS | METH_KEYWORDS, "xxh3_64_intdigest"},
+    {"xxh3_128_hexdigest", (PyCFunction)xxh3_128_hexdigest, METH_VARARGS | METH_KEYWORDS, "xxh3_64_hexdigest"},
     {NULL, NULL, 0, NULL}
 };
 
