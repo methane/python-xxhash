@@ -447,10 +447,10 @@ static PyObject *xxh3_128_intdigest(PyObject *self, PyObject *args, PyObject *kw
     low = PyLong_FromUnsignedLongLong(intdigest.low64);
     high = PyLong_FromUnsignedLongLong(intdigest.high64);
 
-    result = PyNumber_InPlaceLshift(high, sixtyfour);
+    result = PyNumber_Lshift(high, sixtyfour);
     Py_DECREF(high);
     high = result;
-    result = PyNumber_InPlaceAdd(high, low);
+    result = PyNumber_Add(high, low);
     Py_DECREF(high);
     Py_DECREF(low);
     Py_DECREF(sixtyfour);
@@ -1787,10 +1787,10 @@ static PyObject *PYXXH3_128_intdigest(PYXXH3_128Object *self)
     low = PyLong_FromUnsignedLongLong(digest.low64);
     high = PyLong_FromUnsignedLongLong(digest.high64);
 
-    result = PyNumber_InPlaceLshift(high, sixtyfour);
+    result = PyNumber_Lshift(high, sixtyfour);
     Py_DECREF(high);
     high = result;
-    result = PyNumber_InPlaceAdd(high, low);
+    result = PyNumber_Add(high, low);
     Py_DECREF(high);
     Py_DECREF(low);
     Py_DECREF(sixtyfour);
