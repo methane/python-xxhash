@@ -5,19 +5,19 @@ import xxhash
 
 
 class TestXXH(unittest.TestCase):
-    def test_xxh64(self):
+    def test_xxh3_64(self):
         self.assertEqual(xxhash.xxh3_64('a').intdigest(), 9860746555294122439)
         self.assertEqual(xxhash.xxh3_64('a', 0).intdigest(), 9860746555294122439)
         self.assertEqual(xxhash.xxh3_64('a', 1).intdigest(), 13320045329392605694)
         self.assertEqual(xxhash.xxh3_64('a', 2**64-1).intdigest(), 14273714421385330224)
 
-    def test_xxh64_intdigest(self):
+    def test_xxh3_64_intdigest(self):
         self.assertEqual(xxhash.xxh3_64_intdigest('a'), 9860746555294122439)
         self.assertEqual(xxhash.xxh3_64_intdigest('a', 0), 9860746555294122439)
         self.assertEqual(xxhash.xxh3_64_intdigest('a', 1), 13320045329392605694)
         self.assertEqual(xxhash.xxh3_64_intdigest('a', 2**64-1), 14273714421385330224)
 
-    def test_xxh64_update(self):
+    def test_xxh3_64_update(self):
         x = xxhash.xxh3_64()
         x.update('a')
         self.assertEqual(xxhash.xxh3_64('a').digest(), x.digest())
@@ -41,7 +41,7 @@ class TestXXH(unittest.TestCase):
         self.assertEqual(xxhash.xxh3_64('abc', seed).digest(), x.digest())
         self.assertEqual(xxhash.xxh3_64_digest('abc', seed), x.digest())
 
-    def test_xxh64_reset(self):
+    def test_xxh3_64_reset(self):
         x = xxhash.xxh3_64()
         h = x.intdigest()
 
@@ -52,7 +52,7 @@ class TestXXH(unittest.TestCase):
 
         self.assertEqual(h, x.intdigest())
 
-    def test_xxh64_copy(self):
+    def test_xxh3_64_copy(self):
         a = xxhash.xxh3_64()
         a.update('xxhash')
 
@@ -71,7 +71,7 @@ class TestXXH(unittest.TestCase):
         self.assertEqual(a.intdigest(), b.intdigest())
         self.assertEqual(a.hexdigest(), b.hexdigest())
 
-    def test_xxh64_overflow(self):
+    def test_xxh3_64_overflow(self):
         s = 'I want an unsigned 64-bit seed!'
         a = xxhash.xxh3_64(s, seed=0)
         b = xxhash.xxh3_64(s, seed=2**64)
