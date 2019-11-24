@@ -31,7 +31,7 @@ class TestXXH(unittest.TestCase):
         if sys.version_info >= (2, 7):
             args.append(memoryview(b'ab\x00c'))
 
-        for func in [xxhash.xxh32, xxhash.xxh64, xxhash.xxh3_64]:
+        for func in [xxhash.xxh32, xxhash.xxh64, xxhash.xxh3_64, xxhash.xxh3_128]:
             old_refcounts = list(map(getrefcount, args))
             # With constructor
             values = set(func(arg).hexdigest() for arg in args)
