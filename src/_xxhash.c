@@ -434,7 +434,7 @@ static PyObject *xxh3_128_intdigest(PyObject *self, PyObject *args, PyObject *kw
     char *keywords[] = {"input", "seed", NULL};
     Py_buffer buf;
     XXH128_hash_t intdigest;
-    PyObject *low, *high, *sixtyfour;
+    PyObject *result, *low, *high, *sixtyfour;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_128_intdigest", keywords, &buf, &seed)) {
         return NULL;
@@ -446,11 +446,16 @@ static PyObject *xxh3_128_intdigest(PyObject *self, PyObject *args, PyObject *kw
     sixtyfour = PyLong_FromLong(64);
     low = PyLong_FromUnsignedLongLong(intdigest.low64);
     high = PyLong_FromUnsignedLongLong(intdigest.high64);
-    PyNumber_InPlaceLshift(high, sixtyfour);
-    PyNumber_InPlaceAdd(high, low);
+
+    result = PyNumber_InPlaceLshift(high, sixtyfour);
+    Py_DECREF(high);
+    high = result;
+    result = PyNumber_InPlaceAdd(high, low);
+    Py_DECREF(high);
     Py_DECREF(low);
     Py_DECREF(sixtyfour);
-    return high;
+
+    return result;
 }
 
 static PyObject *xxh3_128_hexdigest(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -1774,18 +1779,22 @@ PyDoc_STRVAR(
 static PyObject *PYXXH3_128_intdigest(PYXXH3_128Object *self)
 {
     XXH128_hash_t digest;
-    PyObject *high, *low, *sixtyfour;
+    PyObject *result, *high, *low, *sixtyfour;
     
     digest = XXH3_128bits_digest(self->xxhash_state);
 
     sixtyfour = PyLong_FromLong(64);
     low = PyLong_FromUnsignedLongLong(digest.low64);
     high = PyLong_FromUnsignedLongLong(digest.high64);
-    PyNumber_InPlaceLshift(high, sixtyfour);
-    PyNumber_InPlaceAdd(high, low);
+
+    result = PyNumber_InPlaceLshift(high, sixtyfour);
+    Py_DECREF(high);
+    high = result;
+    result = PyNumber_InPlaceAdd(high, low);
+    Py_DECREF(high);
     Py_DECREF(low);
     Py_DECREF(sixtyfour);
-    return high;
+    return result;
 }
 
 PyDoc_STRVAR(
