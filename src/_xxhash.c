@@ -1241,13 +1241,13 @@ typedef struct {
 
 static PyTypeObject PYXXH3_64Type;
 
-static void PYXXH3_64_dealloc(PYXXH64Object *self)
+static void PYXXH3_64_dealloc(PYXXH3_64Object *self)
 {
     XXH3_freeState(self->xxhash_state);
     PyObject_Del(self);
 }
 
-static void PYXXH3_64_do_update(PYXXH64Object *self, Py_buffer *buf)
+static void PYXXH3_64_do_update(PYXXH3_64Object *self, Py_buffer *buf)
 {
     if (buf->len >= GIL_MINSIZE) {
         Py_BEGIN_ALLOW_THREADS
@@ -1321,7 +1321,7 @@ PyDoc_STRVAR(
     "far. This is a 8-byte string which may contain non-ASCII characters,\n"
     "including null bytes.");
 
-static PyObject *PYXXH3_64_digest(PYXXH64Object *self)
+static PyObject *PYXXH3_64_digest(PYXXH3_64Object *self)
 {
     PyObject *retval;
     char *retbuf;
@@ -1428,7 +1428,7 @@ PyDoc_STRVAR(
 
 static PyObject *PYXXH3_64_copy(PYXXH3_64Object *self)
 {
-    PYXXH64Object *p;
+    PYXXH3_64Object *p;
 
     if ((p = PyObject_New(PYXXH3_64Object, &PYXXH3_64Type)) == NULL) {
         return NULL;
@@ -1585,6 +1585,373 @@ static PyTypeObject PYXXH3_64Type = {
     PYXXH3_64_new,                   /* tp_new */
 };
 
+
+/* XXH3_128 */
+
+typedef struct {
+    PyObject_HEAD
+    /* Type-specific fields go here. */
+    XXH3_state_t *xxhash_state;
+    unsigned long long seed;
+} PYXXH3_128Object;
+
+static PyTypeObject PYXXH3_128Type;
+
+static void PYXXH3_128_dealloc(PYXXH3_128Object *self)
+{
+    XXH3_freeState(self->xxhash_state);
+    PyObject_Del(self);
+}
+
+static void PYXXH3_128_do_update(PYXXH3_128Object *self, Py_buffer *buf)
+{
+    if (buf->len >= GIL_MINSIZE) {
+        Py_BEGIN_ALLOW_THREADS
+        XXH3_128bits_update(self->xxhash_state, buf->buf, buf->len);
+        Py_END_ALLOW_THREADS
+    }
+    else {
+        XXH3_128bits_update(self->xxhash_state, buf->buf, buf->len);
+    }
+    PyBuffer_Release(buf);
+}
+
+static PyObject *PYXXH3_128_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+    PYXXH3_128Object *self;
+
+    if ((self = PyObject_New(PYXXH3_128Object, &PYXXH3_128Type)) == NULL) {
+        return NULL;
+    }
+
+    if ((self->xxhash_state = XXH3_createState()) == NULL) {
+        return NULL;
+    }
+
+    return (PyObject *)self;
+}
+
+static int PYXXH3_128_init(PYXXH3_128Object *self, PyObject *args, PyObject *kwargs)
+{
+    unsigned long long seed = 0;
+    char *keywords[] = {"input", "seed", NULL};
+    Py_buffer buf = {NULL, NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s*K:__init__", keywords, &buf, &seed)) {
+        return -1;
+    }
+
+    self->seed = seed;
+    XXH3_128bits_reset_withSeed(self->xxhash_state, seed);
+
+    if (buf.buf) {
+        PYXXH3_128_do_update(self, &buf);
+    }
+
+    return 0;
+}
+
+PyDoc_STRVAR(
+    PYXXH3_128_update_doc,
+    "update (input)\n\n"
+    "Update the xxh3_128 object with the string input. Repeated calls are\n"
+    "equivalent to a single call with the concatenation of all the arguments.");
+
+static PyObject *PYXXH3_128_update(PYXXH3_128Object *self, PyObject *args)
+{
+    Py_buffer buf;
+
+    if (!PyArg_ParseTuple(args, "s*:update", &buf)) {
+        return NULL;
+    }
+
+    PYXXH3_128_do_update(self, &buf);
+
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(
+    PYXXH3_128_digest_doc,
+    "digest() -> string\n\n"
+    "Return the digest of the strings passed to the update() method so\n"
+    "far. This is a 8-byte string which may contain non-ASCII characters,\n"
+    "including null bytes.");
+
+static PyObject *PYXXH3_128_digest(PYXXH3_128Object *self)
+{
+    PyObject *retval;
+    char *retbuf;
+    XXH128_hash_t digest;
+
+#if PY_MAJOR_VERSION >= 3
+    retval = PyBytes_FromStringAndSize(NULL, XXH128_DIGESTSIZE);
+#else
+    retval = PyString_FromStringAndSize(NULL, XXH128_DIGESTSIZE);
+#endif
+
+    if (!retval) {
+        return NULL;
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    retbuf = PyBytes_AS_STRING(retval);
+#else
+    retbuf = PyString_AS_STRING(retval);
+#endif
+
+    if (!retbuf) {
+        Py_DECREF(retval);
+        return NULL;
+    }
+
+    digest = XXH3_128bits_digest(self->xxhash_state);
+    XXH128_canonicalFromHash((XXH128_canonical_t *)retbuf, digest);
+
+    return retval;
+}
+
+PyDoc_STRVAR(
+    PYXXH3_128_hexdigest_doc,
+    "hexdigest() -> string\n\n"
+    "Like digest(), but returns the digest as a string of hexadecimal digits.");
+
+static PyObject *PYXXH3_128_hexdigest(PYXXH3_128Object *self)
+{
+    PyObject *retval;
+#if PY_MAJOR_VERSION >= 3
+    Py_UNICODE *retbuf;
+#else
+    char *retbuf;
+#endif
+    XXH128_hash_t intdigest;
+    char digest[XXH128_DIGESTSIZE + 1];
+    int i, j;
+
+#if PY_MAJOR_VERSION >= 3
+    retval = PyUnicode_FromStringAndSize(NULL, XXH128_DIGESTSIZE * 2);
+#else
+    retval = PyString_FromStringAndSize(NULL, XXH128_DIGESTSIZE * 2);
+#endif
+
+    if (!retval) {
+        return NULL;
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    retbuf = PyUnicode_AS_UNICODE(retval);
+#else
+    retbuf = PyString_AS_STRING(retval);
+#endif
+
+    if (!retbuf) {
+        Py_DECREF(retval);
+        return NULL;
+    }
+
+    intdigest = XXH3_128bits_digest(self->xxhash_state);
+    XXH128_canonicalFromHash((XXH128_canonical_t *)digest, intdigest);
+
+    for (i = j = 0; i < XXH128_DIGESTSIZE; i++) {
+        unsigned char c;
+        c = (digest[i] >> 4) & 0xf;
+        c = (c > 9) ? c + 'a' - 10 : c + '0';
+        retbuf[j++] = c;
+        c = (digest[i] & 0xf);
+        c = (c > 9) ? c + 'a' - 10 : c + '0';
+        retbuf[j++] = c;
+    }
+
+    return retval;
+}
+
+
+PyDoc_STRVAR(
+    PYXXH3_128_intdigest_doc,
+    "intdigest() -> int\n\n"
+    "Like digest(), but returns the digest as an integer, which is the integer\n"
+    "returned by xxhash C API");
+
+static PyObject *PYXXH3_128_intdigest(PYXXH3_128Object *self)
+{
+    XXH128_hash_t digest;
+    PyObject *high, *low, *sixtyfour;
+    
+    digest = XXH3_128bits_digest(self->xxhash_state);
+
+    sixtyfour = PyLong_FromLong(64);
+    low = PyLong_FromUnsignedLongLong(digest.low64);
+    high = PyLong_FromUnsignedLongLong(digest.high64);
+    PyNumber_InPlaceLshift(high, sixtyfour);
+    PyNumber_InPlaceAdd(high, low);
+    Py_DECREF(low);
+    Py_DECREF(sixtyfour);
+    return high;
+}
+
+PyDoc_STRVAR(
+    PYXXH3_128_copy_doc,
+    "copy() -> xxh64 object\n\n"
+    "Return a copy (``clone'') of the xxh64 object.");
+
+static PyObject *PYXXH3_128_copy(PYXXH3_128Object *self)
+{
+    PYXXH3_128Object *p;
+
+    if ((p = PyObject_New(PYXXH3_128Object, &PYXXH3_128Type)) == NULL) {
+        return NULL;
+    }
+
+    if ((p->xxhash_state = XXH3_createState()) == NULL) {
+        return NULL;
+    }
+
+    p->seed = self->seed;
+    XXH3_copyState(p->xxhash_state, self->xxhash_state);
+
+    return (PyObject *)p;
+}
+
+PyDoc_STRVAR(
+    PYXXH3_128_reset_doc,
+    "reset()\n\n"
+    "Reset state.");
+
+static PyObject *PYXXH3_128_reset(PYXXH3_128Object *self)
+{
+    XXH3_128bits_reset_withSeed(self->xxhash_state, self->seed);
+    Py_RETURN_NONE;
+}
+
+static PyMethodDef PYXXH3_128_methods[] = {
+    {"update", (PyCFunction)PYXXH3_128_update, METH_VARARGS, PYXXH3_128_update_doc},
+    {"digest", (PyCFunction)PYXXH3_128_digest, METH_NOARGS, PYXXH3_128_digest_doc},
+    {"hexdigest", (PyCFunction)PYXXH3_128_hexdigest, METH_NOARGS, PYXXH3_128_hexdigest_doc},
+    {"intdigest", (PyCFunction)PYXXH3_128_intdigest, METH_NOARGS, PYXXH3_128_intdigest_doc},
+    {"copy", (PyCFunction)PYXXH3_128_copy, METH_NOARGS, PYXXH3_128_copy_doc},
+    {"reset", (PyCFunction)PYXXH3_128_reset, METH_NOARGS, PYXXH3_128_reset_doc},
+    {NULL, NULL, 0, NULL}
+};
+
+static PyObject *PYXXH3_128_get_block_size(PYXXH3_128Object *self, void *closure)
+{
+    return PyLong_FromLong(XXH128_BLOCKSIZE);
+}
+
+static PyObject *
+PYXXH3_128_get_digest_size(PYXXH3_128Object *self, void *closure)
+{
+    return PyLong_FromLong(XXH128_DIGESTSIZE);
+}
+
+static PyObject *
+PYXXH3_128_get_name(PYXXH3_128Object *self, void *closure)
+{
+#if PY_MAJOR_VERSION >= 3
+    return PyUnicode_FromStringAndSize("XXH3_64", 7);
+#else
+    return PyString_FromStringAndSize("XXH3_64", 7);
+#endif
+}
+
+static PyObject *
+PYXXH3_128_get_seed(PYXXH3_128Object *self, void *closure)
+{
+    return Py_BuildValue("K", self->seed);
+}
+
+static PyGetSetDef PYXXH3_128_getseters[] = {
+    {
+        "digest_size",
+        (getter)PYXXH3_128_get_digest_size, NULL,
+        "Digest size.",
+        NULL
+    },
+    {
+        "block_size",
+        (getter)PYXXH3_128_get_block_size, NULL,
+        "Block size.",
+        NULL
+    },
+    {
+        "name",
+        (getter)PYXXH3_128_get_name, NULL,
+        "Name. Always XXH3_64.",
+        NULL
+    },
+    {
+        "digestsize",
+        (getter)PYXXH3_128_get_digest_size, NULL,
+        "Digest size.",
+        NULL
+    },
+    {
+        "seed",
+        (getter)PYXXH3_128_get_seed, NULL,
+        "Seed.",
+        NULL
+    },
+    {NULL}  /* Sentinel */
+};
+
+PyDoc_STRVAR(
+    PYXXH3_128Type_doc,
+    "An xxh3_128 represents the object used to calculate the XXH3_128 hash of a\n"
+    "string of information.\n"
+    "\n"
+    "Methods:\n"
+    "\n"
+    "update(input) -- updates the current digest with an additional string\n"
+    "digest() -- return the current digest value\n"
+    "hexdigest() -- return the current digest as a string of hexadecimal digits\n"
+    "intdigest() -- return the current digest as an integer\n"
+    "copy() -- return a copy of the current xxh64 object");
+
+static PyTypeObject PYXXH3_128Type = {
+#if PY_MAJOR_VERSION >= 3
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
+    PyObject_HEAD_INIT(NULL)
+    0,                             /* ob_size */
+#endif
+    "xxhash.xxh3_128",                /* tp_name */
+    sizeof(PYXXH3_128Object),         /* tp_basicsize */
+    0,                             /* tp_itemsize */
+    (destructor)PYXXH3_128_dealloc,   /* tp_dealloc */
+    0,                             /* tp_print */
+    0,                             /* tp_getattr */
+    0,                             /* tp_setattr */
+    0,                             /* tp_compare */
+    0,                             /* tp_repr */
+    0,                             /* tp_as_number */
+    0,                             /* tp_as_sequence */
+    0,                             /* tp_as_mapping */
+    0,                             /* tp_hash */
+    0,                             /* tp_call */
+    0,                             /* tp_str */
+    0,                             /* tp_getattro */
+    0,                             /* tp_setattro */
+    0,                             /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT,            /* tp_flags */
+    PYXXH3_128Type_doc,               /* tp_doc */
+    0,                             /* tp_traverse */
+    0,                             /* tp_clear */
+    0,                             /* tp_richcompare */
+    0,                             /* tp_weaklistoffset */
+    0,                             /* tp_iter */
+    0,                             /* tp_iternext */
+    PYXXH3_128_methods,               /* tp_methods */
+    0,                             /* tp_members */
+    PYXXH3_128_getseters,             /* tp_getset */
+    0,                             /* tp_base */
+    0,                             /* tp_dict */
+    0,                             /* tp_descr_get */
+    0,                             /* tp_descr_set */
+    0,                             /* tp_dictoffset */
+    (initproc)PYXXH3_128_init,        /* tp_init */
+    0,                             /* tp_alloc */
+    PYXXH3_128_new,                   /* tp_new */
+};
+
 /*****************************************************************************
  * Module Init ****************************************************************
  ****************************************************************************/
@@ -1668,6 +2035,15 @@ void init_xxhash(void)
     Py_INCREF(&PYXXH3_64Type);
     PyModule_AddObject(module, "xxh3_64", (PyObject *)&PYXXH3_64Type);
 
+    /* xxh3_128 */
+    if (PyType_Ready(&PYXXH3_128Type) < 0) {
+        INITERROR;
+    }
+
+    Py_INCREF(&PYXXH3_128Type);
+    PyModule_AddObject(module, "xxh3_128", (PyObject *)&PYXXH3_128Type);
+
+    /* version */
     PyModule_AddStringConstant(module, "XXHASH_VERSION", VALUE_TO_STRING(XXHASH_VERSION));
 
 #if PY_MAJOR_VERSION >= 3
