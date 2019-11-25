@@ -1,3 +1,5 @@
+max_jobs: 2
+
 environment:
   global:
     PYPI_USER: ifduyue
