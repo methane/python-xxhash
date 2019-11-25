@@ -112,6 +112,21 @@ class TestXXH(unittest.TestCase):
         self.assertEqual(a.hexdigest(), xxhash.xxh3_128_hexdigest(s, seed=2**65-1))
         self.assertEqual(a.hexdigest(), xxhash.xxh3_128_hexdigest(s, seed=2**66-1))
 
+        def test_xxh3_128_reset_more(self):
+            x = xxhash.xxh3_128()
+            h = x.intdigest()
+
+            for i in range(random.randint(100, 200)):
+                x.reset()
+
+            self.assertEqual(h, x.intdigest())
+
+            for i in range(random.randint(100, 200)):
+                x.update(os.urandom(i))
+                x.reset()
+
+            self.assertEqual(h, x.intdigest())
+
 
 if __name__ == '__main__':
     unittest.main()
