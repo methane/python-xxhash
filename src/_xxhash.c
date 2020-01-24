@@ -98,6 +98,7 @@ static PyObject *xxh32_intdigest(PyObject *self, PyObject *args, PyObject *kwarg
     XXH32_hash_t intdigest;
     char *keywords[] = {"input", "seed", NULL};
     Py_buffer buf;
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|I:xxh32_intdigest", keywords, &buf, &seed)) {
         return NULL;
@@ -123,6 +124,8 @@ static PyObject *xxh32_hexdigest(PyObject *self, PyObject *args, PyObject *kwarg
 #endif
     PyObject *retval;
     int i, j;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|I:xxh32_hexdigest", keywords, &buf, &seed)) {
         return NULL;
@@ -178,6 +181,8 @@ static PyObject *xxh64_digest(PyObject *self, PyObject *args, PyObject *kwargs)
     PyObject *retval;
     char *retbuf;
 
+    buf.buf = buf.obj = NULL;
+
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh64_digest", keywords, &buf, &seed)) {
         return NULL;
     }
@@ -214,6 +219,8 @@ static PyObject *xxh64_intdigest(PyObject *self, PyObject *args, PyObject *kwarg
     char *keywords[] = {"input", "seed", NULL};
     Py_buffer buf;
 
+    buf.buf = buf.obj = NULL;
+
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh64_intdigest", keywords, &buf, &seed)) {
         return NULL;
     }
@@ -238,6 +245,8 @@ static PyObject *xxh64_hexdigest(PyObject *self, PyObject *args, PyObject *kwarg
 #endif
     PyObject *retval;
     int i, j;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh64_hexdigest", keywords, &buf, &seed)) {
         return NULL;
@@ -293,6 +302,8 @@ static PyObject *xxh3_64_digest(PyObject *self, PyObject *args, PyObject *kwargs
     PyObject *retval;
     char *retbuf;
 
+    buf.buf = buf.obj = NULL;
+
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_64_digest", keywords, &buf, &seed)) {
         return NULL;
     }
@@ -329,6 +340,8 @@ static PyObject *xxh3_64_intdigest(PyObject *self, PyObject *args, PyObject *kwa
     char *keywords[] = {"input", "seed", NULL};
     Py_buffer buf;
 
+    buf.buf = buf.obj = NULL;
+
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_64_intdigest", keywords, &buf, &seed)) {
         return NULL;
     }
@@ -353,6 +366,8 @@ static PyObject *xxh3_64_hexdigest(PyObject *self, PyObject *args, PyObject *kwa
 #endif
     PyObject *retval;
     int i, j;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_64_hexdigest", keywords, &buf, &seed)) {
         return NULL;
@@ -408,6 +423,8 @@ static PyObject *xxh3_128_digest(PyObject *self, PyObject *args, PyObject *kwarg
     PyObject *retval;
     char *retbuf;
 
+    buf.buf = buf.obj = NULL;
+
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_128_digest", keywords, &buf, &seed)) {
         return NULL;
     }
@@ -445,6 +462,8 @@ static PyObject *xxh3_128_intdigest(PyObject *self, PyObject *args, PyObject *kw
     Py_buffer buf;
     PyObject *result, *low, *high, *sixtyfour;
 
+    buf.buf = buf.obj = NULL;
+
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_128_intdigest", keywords, &buf, &seed)) {
         return NULL;
     }
@@ -481,6 +500,8 @@ static PyObject *xxh3_128_hexdigest(PyObject *self, PyObject *args, PyObject *kw
 #endif
     PyObject *retval;
     int i, j;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s*|K:xxh3_128_hexdigest", keywords, &buf, &seed)) {
         return NULL;
@@ -580,7 +601,9 @@ static int PYXXH32_init(PYXXH32Object *self, PyObject *args, PyObject *kwargs)
 {
     unsigned int seed = 0;
     char *keywords[] = {"input", "seed", NULL};
-    Py_buffer buf = {NULL, NULL};
+    Py_buffer buf;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s*I:__init__", keywords, &buf, &seed)) {
         return -1;
@@ -605,6 +628,8 @@ PyDoc_STRVAR(
 static PyObject *PYXXH32_update(PYXXH32Object *self, PyObject *args)
 {
     Py_buffer buf;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTuple(args, "s*:update", &buf)) {
         return NULL;
@@ -936,7 +961,9 @@ static int PYXXH64_init(PYXXH64Object *self, PyObject *args, PyObject *kwargs)
 {
     unsigned long long seed = 0;
     char *keywords[] = {"input", "seed", NULL};
-    Py_buffer buf = {NULL, NULL};
+    Py_buffer buf;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s*K:__init__", keywords, &buf, &seed)) {
         return -1;
@@ -961,6 +988,8 @@ PyDoc_STRVAR(
 static PyObject *PYXXH64_update(PYXXH64Object *self, PyObject *args)
 {
     Py_buffer buf;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTuple(args, "s*:update", &buf)) {
         return NULL;
@@ -1291,7 +1320,9 @@ static int PYXXH3_64_init(PYXXH3_64Object *self, PyObject *args, PyObject *kwarg
 {
     unsigned long long seed = 0;
     char *keywords[] = {"input", "seed", NULL};
-    Py_buffer buf = {NULL, NULL};
+    Py_buffer buf;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s*K:__init__", keywords, &buf, &seed)) {
         return -1;
@@ -1316,6 +1347,8 @@ PyDoc_STRVAR(
 static PyObject *PYXXH3_64_update(PYXXH3_64Object *self, PyObject *args)
 {
     Py_buffer buf;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTuple(args, "s*:update", &buf)) {
         return NULL;
@@ -1647,14 +1680,16 @@ static int PYXXH3_128_init(PYXXH3_128Object *self, PyObject *args, PyObject *kwa
 {
     unsigned long long seed = 0;
     char *keywords[] = {"input", "seed", NULL};
-    Py_buffer buf = {NULL, NULL};
+    Py_buffer buf;
+
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s*K:__init__", keywords, &buf, &seed)) {
         return -1;
     }
 
     self->seed = seed;
-    XXH3_128bits_reset_withSeed(self->xxhash_state, (XXH64_hash_t)seed);
+    XXH3_128bits_reset_withSeed(self->xxhash_state, seed);
 
     if (buf.buf) {
         PYXXH3_128_do_update(self, &buf);
@@ -1672,6 +1707,7 @@ PyDoc_STRVAR(
 static PyObject *PYXXH3_128_update(PYXXH3_128Object *self, PyObject *args)
 {
     Py_buffer buf;
+    buf.buf = buf.obj = NULL;
 
     if (!PyArg_ParseTuple(args, "s*:update", &buf)) {
         return NULL;
@@ -1834,7 +1870,7 @@ PyDoc_STRVAR(
 
 static PyObject *PYXXH3_128_reset(PYXXH3_128Object *self)
 {
-    XXH3_128bits_reset_withSeed(self->xxhash_state, (XXH64_hash_t)self->seed);
+    XXH3_128bits_reset_withSeed(self->xxhash_state, self->seed);
     Py_RETURN_NONE;
 }
 
